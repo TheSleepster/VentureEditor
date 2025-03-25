@@ -4,53 +4,13 @@
    $Revision: $
    $Creator: Justin Lewis $
    ======================================================================== */
-constexpr uint64 MAX_VERTICES = 10000;
+#include <venture_opengl.h>
+#include <venture_render_group.h>
 
-struct vertex
-{
-    vec2  Position;
-    vec4  Color;
-    vec2  TexCoords;
-};
-
-struct shader_program
-{
-    GLuint ID;
-    GLuint ViewMatrixUBOID;
-    GLuint TransformVectorUBOID;
-    GLuint SamplerUBOID;
-};
-
-struct bitmap
-{
-    uint32 ChannelCount;
-    uint32 Width;
-    uint32 Height;
-    uint32 PixelStride;
-
-    void  *Data;
-};
-
-struct texture
-{
-    uint32 TexID;
-    uint32 Width;
-    uint32 Height;
-
-    void  *Data;
-};
-
-struct render_state
-{
-    GLuint         VAOID;
-    GLuint         VBOID;
-    shader_program Shader;
-};
-
-internal bitmap
+internal venture_bitmap
 VentureBitmapCreate(memory_arena *Arena, uint32 Width, uint32 Height, uint32 Channels)
 {
-    bitmap Result;
+    venture_bitmap Result;
     Result.ChannelCount = Channels;
     Result.Width        = Width;
     Result.Height       = Height;
@@ -60,10 +20,10 @@ VentureBitmapCreate(memory_arena *Arena, uint32 Width, uint32 Height, uint32 Cha
     return Result;
 }
 
-internal texture
-VentureCreateTextureFromBitmap(memory_arena *Arena, bitmap *Bitmap)
+internal venture_texture
+VentureCreateTextureFromBitmap(venture_bitmap *Bitmap)
 {
-    texture Result;
+    venture_texture Result;
     glGenTextures(1, &Result.TexID);
     glBindTexture(GL_TEXTURE_2D, Result.TexID);
     
@@ -260,7 +220,7 @@ VentureInitOpenGLRenderer(render_state *RenderState)
 internal void
 VentureRenderOneFrame(render_state *RenderState)
 {
-    glClearColor(0.1, 0.1, 0.1, 1.0);
+    glClearColor(0.9, 0.1, 0.6, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glViewport(0, 0, ClientSize.X, ClientSize.Y);

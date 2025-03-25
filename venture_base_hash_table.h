@@ -23,18 +23,18 @@ struct hash_table
     hash_entry Entries[MAX_HASH_ENTRIES];
 };
 
-#define HashGetIndex(key) HashGetIndex__(key)
+#define HashGetIndex(key) HashGetIndex__((void *)key)
 internal uint32
 HashGetIndex__(void *Key)
 {
-    char *KeyData = (char *)Key;
+    string_u8 *KeyString = (string_u8 *)Key;
 
     uint64 HashValue = 14695981039346656037;
-    for(int32 KeyIndex = 0;
-        KeyIndex < ArrayCount(KeyData);
+    for(uint32 KeyIndex = 0;
+        KeyIndex < KeyString->Length;
         ++KeyIndex)
     {
-        char C = *(KeyData + KeyIndex);
+        char C = *(KeyString->Data + KeyIndex);
 
         HashValue = HashValue ^ C;
         HashValue = HashValue * 1099511628211;
@@ -49,7 +49,7 @@ HashInsertPair(hash_table *Table, void *Key, void *Value)
     Assert(HashIndex >= 0, "Hash Index is Invalid...");
 
     hash_entry *Entry = &Table->Entries[HashIndex];
-    if(strcmp((char *)Entry->Key, (char *)Key) == 0)
+    if(StringCompare((string_u8 *)Entry->Key, (string_u8 *)Key))
     {
         Entry->Value = Value;
         Log(LOG_WARNING, "Value at index %d has been updated...", HashIndex);
@@ -69,10 +69,11 @@ HashGetValue(hash_table *Table, void *Key)
     Assert(HashIndex >= 0, "Hash Index is Invalid...");
 
     hash_entry *Entry = &Table->Entries[HashIndex];
-    if(strcmp((char *)Entry->Key, (char *)Key) == 0)
+    if(StringCompare((string_u8 *)Entry->Key, (string_u8 *)Key))
     {
         Result = Table->Entries[HashIndex].Value;
     }
+
     return Result;
 }
 

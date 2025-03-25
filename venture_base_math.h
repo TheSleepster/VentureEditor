@@ -350,6 +350,17 @@ operator/(ivec2 A, float B)
 }
 
 static inline ivec2
+operator/(ivec2 A, int32 B)
+{
+    ivec2 Result = {};
+    
+    Result.X = A.X * B;
+    Result.Y = A.Y * B;
+    
+    return(Result);
+}
+
+static inline ivec2
 operator*=(ivec2 &A, int B)
 {
     A.X = A.X * B;

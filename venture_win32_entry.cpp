@@ -118,7 +118,7 @@ internal
 PLATFORM_READ_ENTIRE_FILE(PlatformReadEntireFile)
 {
     uint8 *Result = {};
-    FileSizeOut   = 0;
+    *FileSizeOut   = 0;
     HANDLE FileHandle = CreateFileA(c_str(Filepath),
                                    GENERIC_READ,
                                    FILE_SHARE_READ,
@@ -361,6 +361,8 @@ WinMain(HINSTANCE hInstance,
         AdjustWindowRectEx(&rect, WS_OVERLAPPEDWINDOW, FALSE, WS_EX_CLIENTEDGE);
         SizeData.Width  = rect.right  - rect.left;
         SizeData.Height = rect.bottom - rect.top;
+
+        ClientSize = SizeData;
 
         Win32LoadWGLFunctions(WindowClass, hInstance, &WGLFunctions);
         PlatformHandleData.DeviceInstance = hInstance;

@@ -51,10 +51,10 @@ enum darray_header_data
 // this to compilers like Clang and GCC. RANT: I don't know why the
 // hell there's no standardization of getting the fucking TYPE OF
 // SOMETHING PASSED. It's crazy to me. Templates suck ass.
-#define DArrayAppendValue(array, value)                                            \
-do{                                                                                \
-        decltype(value) Temp = value;                                              \
-        array = (decltype(value)*)DArrayAppendValue_(Array, &Temp, sizeof(value)); \
+#define DArrayAppendValue(array, value)                                              \
+do{                                                                                  \
+        decltype(value) Temp = value;                                                \
+        array = (*(decltype(value)*)DArrayAppendValue_(array, &Temp, sizeof(value)));\
   }while(0);
 
 internal void*
@@ -141,7 +141,7 @@ DArrayAppendValue_(void *Array, void *Value, uint64 ElementSize)
     else
     {
         Log(LOG_ERROR,
-            "You are attempting to insert an element of size '%' into a DArray that only takes size '%'...",
+            "You are attempting to insert an element of size '%d' into a DArray that only takes size '%d'...",
             ElementSize, ArrayElementSize);
         DebugHalt();
     }

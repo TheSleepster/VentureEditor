@@ -43,4 +43,6 @@ typedef double   float64;
 #define MemberHelper(type, member)    (((type *)0)->member)
 #define GetMemberOffset(type, member) IntFromPtr(&MemberHelper(type, member))
 
+#define null nullptr
+
 #endif

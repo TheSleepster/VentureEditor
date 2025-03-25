@@ -18,7 +18,7 @@ struct string_u8
     uint32 Length;
 };
 
-#define str_lit(x) (StringCreate(x, ArrayCount(x)))
+#define str_lit(x) (StringCreate(x, GetStringLength(x)))
 #define c_str(x)   ((const char *)x.Data)
 
 #define stringify_(s) #s
@@ -33,6 +33,41 @@ StringCreate(char *StringData, uint32 Length)
     Result.Data   = (uint8 *)StringData;
     Result.Length = Length;
 
+    return(Result);
+}
+
+internal void
+StringMakeHeap(memory_arena *Arena, string_u8 *String)
+{
+    string_u8 Temp = {};
+    Temp.Data = (uint8 *)ArenaPushSize(Arena, String->Length * sizeof(uint8));
+    memcpy(Temp.Data, String->Data, String->Length * sizeof(uint8));
+
+    String->Data = Temp.Data;
+}
+
+internal string_u8*
+StringCopy(memory_arena *Arena, string_u8 String)
+{
+    string_u8 *Result;
+    Result = ArenaPushStruct(Arena, string_u8);
+    if(Result)
+    {
+        Result->Length = String.Length;
+        Result->Data   = ArenaPushArray(Arena, uint8, String.Length);
+        if(Result->Data)
+        {
+            memcpy(Result->Data, String.Data, String.Length * sizeof(uint8));
+        }
+        else
+        {
+            Log(LOG_ERROR, "Failed to allocate the string's data...");
+        }
+    }
+    else
+    {
+        Log(LOG_ERROR, "Failed to arena alloc Result...\n");
+    }
     return(Result);
 }
 
@@ -79,6 +114,50 @@ StringConcat(memory_arena *Arena, string_u8 A, string_u8 B)
     memcpy(Result.Data + A.Length, B.Data, B.Length);
 
     return(Result);
+}
+
+// NOTE(Sleepster): Compare By Pointer
+internal inline bool32
+StringCompare(string_u8 *A, string_u8 *B)
+{
+    bool32 Result = false;
+    if(A && B)
+    {
+        if(A->Length != B->Length) Result = false;
+        if(A->Data == B->Data)     Result = true;
+    
+        Result = (memcmp(A->Data, B->Data, A->Length) == 0);
+    }
+    return Result;
+}
+
+// NOTE(Sleepster): OVERLOAD compare by value
+internal inline bool32
+StringCompare(string_u8 A, string_u8 B)
+{
+    if(A.Length != B.Length) return(0);
+    if(A.Data == B.Data)     return(1);
+    
+    return(memcmp(A.Data, B.Data, A.Length) == 0);
+}
+
+internal inline uint32
+GetStringLength(const char *String)
+{
+    if(String)
+    {
+        uint32 Length = 0;
+        while(*String != 0)
+        {
+            ++Length;
+            ++String;
+        }
+        return(Length);
+    }
+    else
+    {
+        return(0);
+    }
 }
 
 #endif
