@@ -11,11 +11,12 @@
 
 constexpr uint64 MAX_VERTICES = 10000;
 
-struct vertex
+struct render_vertex
 {
-    vec2  Position;
-    vec4  Color;
-    vec2  TexCoords;
+    vec2    Position;
+    vec2    TexCoords;
+    vec4    Color;
+    float32 HalfThickness;
     //int32 TexIndex;
 };
 

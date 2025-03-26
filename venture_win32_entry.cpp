@@ -405,7 +405,7 @@ WinMain(HINSTANCE hInstance,
 
             // NOTE(Sleepster): Init Memory Data
             {
-                AppMemory.PrimaryPool   = MemoryPoolCreate(MB(100));
+                AppMemory.PrimaryPool   = MemoryPoolCreate(GB(2));
             }
 
             AppIsRunning = true;

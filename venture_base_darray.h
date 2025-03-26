@@ -57,29 +57,6 @@ do{                                                                             
         array = (*(decltype(value)*)DArrayAppendValue_(array, &Temp, sizeof(value)));\
   }while(0);
 
-internal void*
-DArrayCreate_(uint64 TypeSize, uint64 InitialCapacity = DefaultDArrayCapacity)
-{
-    uint64 HeaderSize = DARRAY_HEADER_SIZE * sizeof(uint64);
-    uint64 ArraySize  = TypeSize * InitialCapacity;
-
-    uint64 *Array     = (uint64 *)PlatformHeapAlloc(ArraySize + HeaderSize);
-    memset(Array, 0, ArraySize + HeaderSize);
-
-    Array[DARRAY_MAX_CAPACITY]   = InitialCapacity;
-    Array[DARRAY_ELEMENT_STRIDE] = TypeSize;
-    Array[DARRAY_ELEMENT_USED]   = 0;
-
-    return((void *)(Array + DARRAY_HEADER_SIZE));
-}
-
-internal inline void
-DArrayDestroy(void *Array)
-{
-    uint64 *Header = ((uint64 *)Array - DARRAY_HEADER_SIZE);
-    PlatformHeapFree(Header);
-}
-
 internal inline uint64
 DArrayGetHeaderInfo(void *Array, uint64 FieldIndex)
 {
@@ -97,6 +74,39 @@ DArraySetHeaderInfo(void *Array, uint64 FieldIndex, uint64 Value)
 }
 
 internal void*
+DArrayCreate_(uint64 TypeSize, uint64 InitialCapacity = DefaultDArrayCapacity)
+{
+    uint64 HeaderSize = DARRAY_HEADER_SIZE * sizeof(uint64);
+    uint64 ArraySize  = TypeSize * InitialCapacity;
+
+    uint64 *Array     = (uint64 *)PlatformHeapAlloc(ArraySize + HeaderSize);
+    memset(Array, 0, ArraySize + HeaderSize);
+
+    Array[DARRAY_MAX_CAPACITY]   = InitialCapacity;
+    Array[DARRAY_ELEMENT_STRIDE] = TypeSize;
+    Array[DARRAY_ELEMENT_USED]   = 0;
+
+#ifdef INTERNAL_DEBUG
+    Log(LOG_TRACE, "Dynamic Array with of size: '%d' has been created...", ArraySize + HeaderSize);
+#endif
+
+    return((void *)(Array + DARRAY_HEADER_SIZE));
+}
+
+internal inline void
+DArrayDestroy(void *Array)
+{
+#ifdef INTERNAL_DEBUG
+    uint64 Capacity    = DArrayGetCapacity(Array);
+    uint64 ElementSize = DArrayGetElementSize(Array);
+    Log(LOG_TRACE, "Dynamic Array with of size: '%d' has been freed...", Capacity * ElementSize);
+#endif
+
+    uint64 *Header = ((uint64 *)Array - DARRAY_HEADER_SIZE);
+    PlatformHeapFree(Header);
+}
+
+internal void*
 DArrayResize(void *Array)
 {
     uint64 Capacity    = DArrayGetCapacity(Array);
@@ -105,6 +115,12 @@ DArrayResize(void *Array)
 
     uint64 *Header  = (uint64 *)Array - DARRAY_HEADER_SIZE;
     void *NewArray = PlatformHeapRealloc(Header, ArraySize + (DARRAY_HEADER_SIZE * sizeof(uint64)));
+
+#ifdef INTERNAL_DEBUG
+    Log(LOG_TRACE, "Dynamic Array has been resized from: '%d' to a new size of: '%d'...",
+        Capacity * ElementSize, ArraySize);
+#endif
+
     if(NewArray)
     {
         uint64 *NewHeader = (uint64 *)NewArray;

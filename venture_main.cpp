@@ -27,18 +27,23 @@ VentureMain(platform_data_handles *PlatformHandles, application_memory *Memory)
     render_state RenderState = {};
     
     InitFontLoading();
-    VentureInitOpenGLRenderer(&RenderState);
 
     memory_arena Arena = ArenaCreate(&Memory->PrimaryPool, MB(1000));
-    render_target *FirstTarget = RenderTargetCreate(&Arena, &RenderState);
+    RenderState.Arena  = ArenaCreate(&Memory->PrimaryPool, MB(200));
+
+    VentureInitOpenGLRenderer(&RenderState);
 
     venture_dynamic_render_font Font       = LoadFontData(&Arena, str_lit("../fonts/LiberationMono-Regular.ttf"));
-    venture_dynamic_font_varient *FontSize = GetFontAtSize(&Font, 32);
+    venture_dynamic_font_varient *FontSize = GetFontAtSize(&Font, 28);
 
-    string_u8 Data         = str_lit("We tried to convert this");
+    RenderState.ActiveFont       = &Font;
+    RenderState.ActivePixelSize = FontSize;
+
+    string_u8 Data         = str_lit("hi, we are trying this");
     uint32 Value           = UTF8ConvertToUTF32(&Data.Data[0]);
     glyph_data *Result     = GetUTF8Glyph(FontSize, &Data.Data[0]);
     glyph_data *HashResult = (glyph_data *)HashGetValue(&Result->OwnerPage->GlyphLookup, Result->HashKey);
+
 
     HashResult->OwnerPage->AtlasTexture = VentureCreateTextureFromBitmap(&HashResult->OwnerPage->AtlasBitmap);
     glActiveTexture(GL_TEXTURE0);
@@ -48,7 +53,17 @@ VentureMain(platform_data_handles *PlatformHandles, application_memory *Memory)
     {
         ClientSize = PlatformGetClientSize(PlatformHandles);
         PlatformPollEvents(PlatformHandles);
+
+        RenderState.VertexCount = 0;
+        RenderPushString(&RenderState, Data, {0, 20}, {1, 1, 1, 1});
+        
+        if(FontSize->FirstPage->BitmapDirty)
+        {
+            VentureUpdateTextureFromBitmap(&FontSize->FirstPage->AtlasTexture, &FontSize->FirstPage->AtlasBitmap);
+            FontSize->FirstPage->BitmapDirty = false;
+        }
         
         VentureRenderOneFrame(&RenderState);
+        PlatformSwapRenderBuffers(PlatformHandles);
     }
 }

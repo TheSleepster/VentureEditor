@@ -46,15 +46,15 @@ constexpr uint32 UTF32_REPLACEMENT_CHARACTER = 0x0000FFFD;
 
 struct glyph_data
 {
-    ivec2  AtlasOffset;
-    ivec2  GlyphSize;
+    vec2  AtlasOffset;
+    vec2  GlyphSize;
 
     void  *HashKey;
-    uint32 OffsetX;
-    uint32 OffsetY;
+    int32 OffsetX;
+    int32 OffsetY;
 
-    uint32 Advance;
-    uint32 Ascent;
+    int32 Advance;
+    int32 Ascent;
 
     venture_dynamic_font_page *OwnerPage;
 };
@@ -82,9 +82,9 @@ struct venture_dynamic_font_varient
 {
     uint32                      PixelSize;
 
-    int32                       LineSpacing;
-    int32                       MaxAscender;
-    int32                       MaxDescender;
+    int64                       LineSpacing;
+    int64                       MaxAscender;
+    int64                       MaxDescender;
     int32                       yCenterOffset;
     int32                       TypicalAscender;
     int32                       TypicalDescender;

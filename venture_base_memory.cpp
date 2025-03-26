@@ -16,9 +16,15 @@ MemoryPoolCreate(uint64 Size)
     memory_pool Result;
     Result.PoolSize = Size;
     Result.Data     = PlatformVirtualAlloc(Size);
+
     if(Result.Data)
     {
         Result.Offset = (uint8 *)Result.Data;
+
+#ifdef INTERNAL_DEBUG
+        Log(LOG_TRACE, "A Memory Pool of size: '%.2f'GB has been allocated from the OS...",
+            Size * 0.001 * 0.001 * 0.001);
+#endif
     }
     else
     {
@@ -34,11 +40,23 @@ MemoryPoolCreate(uint64 Size)
 internal memory_arena
 ArenaCreate(memory_pool *ParentPool, uint64 ArenaSize)
 {
+    if(uint32(ParentPool->Used + ArenaSize) > ParentPool->PoolSize)
+    {
+        Log(LOG_FATAL, "The passed pool only has a size of '%d', but the allocation would push it's used to '%d'...",
+            ParentPool->PoolSize, ArenaSize + ParentPool->Used);
+    }
+
+#ifdef INTERNAL_DEBUG
+    Log(LOG_TRACE, "Arena with size: '%d' has been created... Space remaining in pool: '%d'...",
+        ArenaSize, ParentPool->PoolSize - ParentPool->Used);
+#endif
+    
     memory_arena Result;
     Result.Capacity  = ArenaSize;
     Result.Allocated = 0;
     Result.Base      = ParentPool->Offset;
 
+    ParentPool->Used   += ArenaSize;
     ParentPool->Offset += ArenaSize;
     return(Result);
 }
@@ -70,6 +88,11 @@ ArenaAllocate(memory_arena *Arena, uint64 Size, uint32 Alignment)
            "Arena allocation with size '%d' would exceed the capacity of '%d'", Size, Arena->Capacity);
     Result = (void *)(Arena->Base + Arena->Allocated + AlignmentOffset);
 
+#ifdef INTERNAL_DEBUG
+    Log(LOG_TRACE, "Size of: '%d', has been arena allocated... Arena has: '%d' bytes remaining...",
+        Size, Arena->Capacity - Arena->Allocated);
+#endif
+
     Arena->Allocated += Size;
     return(Result);
 }
@@ -85,6 +108,11 @@ ArenaCreateSubArena(memory_arena *ParentArena, uint64 Capacity, uint32 Alignment
     memory_arena Result;
     Result.Capacity = Capacity;
     Result.Base = (uint8 *)ArenaPushSize(ParentArena, Capacity, Alignment);
+
+#ifdef INTERNAL_DEBUG
+    Log(LOG_TRACE, "Child Arena with size: '%d' has been created... Space remaining in Parent Arena: '%'...",
+        Capacity, ParentArena->Capacity - ParentArena->Allocated);
+#endif
 
     return(Result);
 }

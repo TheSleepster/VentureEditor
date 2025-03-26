@@ -13,6 +13,7 @@ struct memory_pool
 {
     void  *Data;
     uint8 *Offset;
+    uint64 Used;
     uint64 PoolSize;
 };
 

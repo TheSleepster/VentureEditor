@@ -23,21 +23,28 @@ FT_ROUND(int32 X)
     return -(((-X) + 0x1f) >> 6);
 }
 
-internal ivec2
+internal uint8 *
+UnicodeNextCharacter(uint8 *Char)
+{
+    uint8 CharacterBytes = 1 + TrailingBytesUTF8[*Char];
+    return(Char + CharacterBytes);
+}
+
+internal vec2
 FindNextGlyphLine(venture_dynamic_font_page *Page, uint32 GlyphWidth, uint32 GlyphHeight)
 {
-    ivec2 Result = {};
+    vec2 Result = {};
     uint32 DesiredX = Page->BitmapCursorX + GlyphWidth;
     if(DesiredX > Page->AtlasBitmap.Width)
     {
         Page->BitmapCursorX  = 0;
-        Page->BitmapCursorY += Page->ParentVarient->MaxAscender;
+        Page->BitmapCursorY += (int32)Page->ParentVarient->MaxAscender;
         
-        Result = {0, Page->BitmapCursorY};
+        Result = {0, (float)Page->BitmapCursorY};
     }
     else
     {
-        Result = {Page->BitmapCursorX, Page->BitmapCursorY};
+        Result = {(float)Page->BitmapCursorX, (float)Page->BitmapCursorY};
     }
     
     return(Result);
@@ -54,18 +61,22 @@ CopyGlyphDataToPageBitmap(venture_dynamic_font_page *Page, glyph_data *Glyph)
                                                 FontAtlasHeight,
                                                 4);
     }
-    FT_Face FontFace       = Page->ParentVarient->ParentFont->FontFace;
+    FT_Face FontFace = Page->ParentVarient->ParentFont->FontFace;
 
-    Glyph->OffsetX  = (int16)FontFace->glyph->bitmap_left;
-    Glyph->OffsetY  = (int16)FontFace->glyph->bitmap_top;
-    Glyph->Advance  = (int16)FontFace->glyph->advance.x >> 6;
-    Glyph->Ascent   = FontFace->glyph->metrics.horiBearingY >> 6; 
+    Glyph->OffsetX   = (int16)(FontFace->glyph->bitmap_left);
+    Glyph->OffsetY   = (int16)(FontFace->glyph->bitmap_top);
+    Glyph->Advance   = (int16)(FontFace->glyph->advance.x >> 6);
+    Glyph->Ascent    = (int16)(FontFace->glyph->metrics.horiBearingY >> 6); 
 
     Glyph->AtlasOffset = FindNextGlyphLine(Glyph->OwnerPage,
                                            FontFace->glyph->bitmap.width,
                                            FontFace->glyph->bitmap.rows);
+    
     int32 Width    = FontFace->glyph->bitmap.width;
     int32 RowCount = FontFace->glyph->bitmap.rows;
+
+    Glyph->GlyphSize = {(float)Width, (float)RowCount};
+    
     for(int32 Row = 0;
         Row < RowCount;
         ++Row)
@@ -75,7 +86,7 @@ CopyGlyphDataToPageBitmap(venture_dynamic_font_page *Page, glyph_data *Glyph)
             ++Column)
         {
             uint8 Source = FontFace->glyph->bitmap.buffer[(RowCount- 1 - Row) * FontFace->glyph->bitmap.pitch + Column];
-            uint8 *Dest  = (uint8 *)Page->AtlasBitmap.Data + ((Glyph->AtlasOffset.Y + Row) * Page->AtlasBitmap.Width + (Glyph->AtlasOffset.X + Column)) * 4;
+            uint8 *Dest  = (uint8 *)Page->AtlasBitmap.Data + (((uint32)Glyph->AtlasOffset.Y + Row) * Page->AtlasBitmap.Width + ((uint32)Glyph->AtlasOffset.X + Column)) * 4;
 
             Dest[0] = Source;
             Dest[1] = Source;
@@ -131,13 +142,12 @@ GetUTF8Glyph(venture_dynamic_font_varient *Varient, uint8 *Character)
     if(UTF32Char)
     {
         string_u8 Temp = str_lit((char *)&UTF32Char);
-        string_u8 *KeyString = StringCopy(Varient->ParentFont->FontArena, Temp);
 
         for(venture_dynamic_font_page *FirstPage = Varient->FirstPage;
             FirstPage;
             FirstPage = FirstPage->NextPage)
         {
-            Result = (glyph_data *)HashGetValue(&FirstPage->GlyphLookup, (void *)KeyString);
+            Result = (glyph_data *)HashGetValue(&FirstPage->GlyphLookup, (void *)&Temp);
             if(Result)
             {
                 Page = FirstPage;
@@ -199,7 +209,8 @@ GetUTF8Glyph(venture_dynamic_font_varient *Varient, uint8 *Character)
                 Assert(!Error, "FT_Load_Glyph has failed on GlyphIndex '%'...", GlyphIndex);
             }
 
-            glyph_data *GlyphData = ArenaPushStruct(Varient->ParentFont->FontArena, glyph_data);
+            glyph_data *GlyphData  = ArenaPushStruct(Varient->ParentFont->FontArena, glyph_data);
+            string_u8 *KeyString   = StringCopy(Varient->ParentFont->FontArena, Temp);
             GlyphData->HashKey     = KeyString;
             GlyphData->OwnerPage   = Page;
 
@@ -234,7 +245,6 @@ SetFontUnknownCharacter(venture_dynamic_font_varient *FontVar, uint32 UTF32Index
     return(true);
 }
 
-// TODO(Sleepster): UNICODE STUFF!!!! YAYYYYYYYYY (I will blow my fucking head off...) 
 internal venture_dynamic_render_font
 LoadFontData(memory_arena *Arena, string_u8 Filepath)
 {
@@ -267,19 +277,19 @@ CreateFontAtSize(venture_dynamic_render_font *Font, uint32 FontSize)
             Error  = FT_Set_Pixel_Sizes(Font->FontFace, 0, FontSize);
             Assert(!Error, "Failure to set the freetype pixel sizes");
 
-            real32 FontScaleToPixels = Font->FontFace->size->metrics.y_scale / (64.0f * 65536.0f);
+            real64 FontScaleToPixels = Font->FontFace->size->metrics.y_scale / (64.0 * 65536.0);
             Result->PixelSize = FontSize;
 
-            Result->LineSpacing     = (uint32)floorf(FontScaleToPixels * Font->FontFace->height + 0.5f);
-            Result->MaxAscender     = (uint32)floorf(FontScaleToPixels * Font->FontFace->bbox.yMax + 0.5f);
-            Result->MaxDescender    = (uint32)floorf(FontScaleToPixels * Font->FontFace->bbox.yMin + 0.5f);
+            Result->LineSpacing     = (int64)floor(FontScaleToPixels * Font->FontFace->height + 0.5);
+            Result->MaxAscender     = (int64)floor(FontScaleToPixels * Font->FontFace->bbox.yMax + 0.5);
+            Result->MaxDescender    = (int64)floor(FontScaleToPixels * Font->FontFace->bbox.yMin + 0.5);
             Result->ParentFont      = Font;
 
             uint32 GlyphIndex = FT_Get_Char_Index(Font->FontFace, 'm');
             if(GlyphIndex)
             {
                 FT_Load_Glyph(Font->FontFace, GlyphIndex, FT_LOAD_DEFAULT);
-                Result->yCenterOffset = (uint32)(0.5f * FT_ROUND(Font->FontFace->glyph->metrics.horiBearingY) + 0.5f);
+                Result->yCenterOffset = (int32)(0.5f * FT_ROUND(Font->FontFace->glyph->metrics.horiBearingY) + 0.5f);
             }
 
             GlyphIndex  = FT_Get_Char_Index(Font->FontFace, 'M');

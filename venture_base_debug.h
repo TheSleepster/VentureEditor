@@ -56,11 +56,11 @@ _Log(debug_log_level LogLevel, const char *Message, char *File, int32 Line, ...)
     const char *InfoStrings[] = {"[TRACE]: ", "[INFO]: ", "[WARNING]:", "[NON-FATAL ERROR]: ", "[FATAL ERROR]: "};
     const char *ColorCodes[]  =
     {
-        "\033[34m",          // LOG_TRACE: Blue
-        "\033[32m",          // LOG_INFO: Green
+        "\033[36m",          // LOG_TRACE:   Teal
+        "\033[32m",          // LOG_INFO:    Green
         "\033[33m",          // LOG_WARNING: Yellow
-        "\033[31m",          // LOG_ERROR: Red
-        "\033[41m\033[30m"   // LOG_FATAL: Red background, Black text
+        "\033[31m",          // LOG_ERROR:   Red
+        "\033[41m\033[30m"   // LOG_FATAL:   Red background, Black text
     };
     bool8 IsError = (LogLevel > 2);
 
