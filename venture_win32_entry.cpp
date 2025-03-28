@@ -35,6 +35,7 @@
 
 // CORE
 #include <venture_base_memory.cpp>
+#include <venture_input.cpp>
 #include <venture_main.cpp>
 
 internal inline
@@ -117,8 +118,7 @@ PLATFORM_VIRTUAL_ALLOC(PlatformVirtualAlloc)
 internal
 PLATFORM_READ_ENTIRE_FILE(PlatformReadEntireFile)
 {
-    uint8 *Result = {};
-    *FileSizeOut   = 0;
+    string_u8 Result = {};
     HANDLE FileHandle = CreateFileA(c_str(Filepath),
                                    GENERIC_READ,
                                    FILE_SHARE_READ,
@@ -131,13 +131,12 @@ PLATFORM_READ_ENTIRE_FILE(PlatformReadEntireFile)
         DWORD FileSize = GetFileSize(FileHandle, 0);
         if(FileSize != 0)
         {
-            *FileSizeOut = FileSize;
+            Result.Length = FileSize;
+            if(Arena) Result.Data = ArenaPushArray(Arena, uint8, FileSize);
+            else      Result.Data = (uint8 *)PlatformHeapAlloc(sizeof(uint8) * FileSize);
+            Assert(Result.Data, "Failed to allocate '%d' from our arena...\n", FileSize * sizeof(uint8));
 
-            if(Arena) Result = ArenaPushArray(Arena,  uint8,   FileSize);
-            else      Result = (uint8 *)PlatformHeapAlloc(sizeof(uint8) * FileSize);
-            Assert(Result, "Failed to allocate '%d' from our arena...\n", Result);
-
-            BOOL Success = ReadFile(FileHandle, Result, FileSize, 0, 0);
+            BOOL Success = ReadFile(FileHandle, Result.Data, Result.Length, 0, 0);
             if(!Success)
             {
                 HRESULT Error = HRESULT_FROM_WIN32(GetLastError());
@@ -288,6 +287,22 @@ PLATFORM_POLL_EVENTS(PlatformPollEvents)
     {
         switch(Message.message)
         {
+            case WM_KEYDOWN:
+            case WM_KEYUP:
+            case WM_SYSKEYDOWN:
+            case WM_SYSKEYUP:
+            {
+                bool8 AltKeyIsDown     = ((Message.lParam & (1 << 29)) != 0);
+                bool8 ShiftKeyIsDown   = ((GetKeyState(VK_SHIFT) & 0x8000) != 0);
+                bool8 ControlKeyIsDown = ((GetKeyState(VK_CONTROL) & 0x8000) != 0);
+
+                uint32 VKCode = (uint32)Message.wParam;
+                bool8 IsDown  = ((Message.lParam & (1 << 31)) == 0);
+
+                key_data *Key = &Keys[VKCode];
+                Key->IsDown = IsDown;
+            }break;
+            
             case WM_SIZE:
             default:
             {

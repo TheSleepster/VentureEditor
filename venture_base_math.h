@@ -783,14 +783,11 @@ v2Clamp(vec2 Value, vec2 Min, vec2 Max)
     return(Value);
 }
 
-
-
 static inline bool
 Equals(float A, float B, float Tolerance)
 {
     return(fabs(A - B) <= Tolerance);
 }
-
 
 static inline void
 Approach(float *Value, float Target, float Rate, float Delta_t)

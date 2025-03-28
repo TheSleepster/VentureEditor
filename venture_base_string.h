@@ -160,4 +160,69 @@ GetStringLength(const char *String)
     }
 }
 
+internal inline int32
+FindFirstCharFromLeft(string_u8 String, char Character)
+{
+    int32 Result = -1;
+    for(uint32 Index = 0;
+        Index < String.Length;
+        ++Index)
+    {
+        char Found = (char)String.Data[Index];
+        if(Found == Character)
+        {
+            Result = Index;
+            break;
+        }
+    }
+
+    return(Result);
+}
+
+internal inline int32
+FindFirstCharFromRight(string_u8 String, char Character)
+{
+    int32 Result = -1;
+    for(uint32 Index = String.Length;
+        Index > 0;
+        --Index)
+    {
+        char Found = (char)String.Data[Index];
+        if(Found == Character)
+        {
+            Result = Index;
+            break;
+        }
+    }
+
+    return(Result);
+}
+
+// TODO(Sleepster): String the ext???
+internal inline string_u8
+GetFilenameFromPath(string_u8 Filepath)
+{
+    string_u8 Result = {};
+    int32 ExtStart = FindFirstCharFromRight(Filepath, '/');
+    if(ExtStart != -1)
+    {
+        Result = StringSubstring(Filepath, ExtStart + 1, Filepath.Length);
+    }
+
+    return(Result);
+}
+
+internal inline string_u8
+GetFileExtFromPath(string_u8 Filepath)
+{
+    string_u8 Result = {};
+    int32 ExtStart = FindFirstCharFromRight(Filepath, '.');
+    if(ExtStart != -1)
+    {
+        Result = StringSubstring(Filepath, ExtStart, Filepath.Length);
+    }
+
+    return(Result);
+}
+
 #endif

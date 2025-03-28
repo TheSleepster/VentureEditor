@@ -21,6 +21,7 @@ PushVertices(render_state *RenderState, render_vertex *Vertices)
 {
     Assert(Vertices, "Vertices is invalid...\n");
     Assert(Vertices + 6, "Vertices is invalid...\n");
+    Assert(RenderState->VertexCount + 6 < MAX_VERTICES, "We have reached the end of our vertex buffer. MAX_VERTICES is: '%d'... Current Vertex Count: '%d'...", MAX_VERTICES, RenderState->VertexCount);
     render_vertex *VertexPTR = RenderState->Vertices + RenderState->VertexCount;
 
     VertexPTR[0] = Vertices[0];
@@ -39,7 +40,7 @@ PushGlyph(render_state *RenderState, char *Character, vec2 Position, vec4 Color)
 {
     if(RenderState->ActiveFont)
     {
-        render_vertex Vertices[6];
+        render_vertex Vertices[6] = {};
         glyph_data *Glyph = GetUTF8Glyph(RenderState->ActivePixelSize, (uint8 *)Character);
 
         /*
@@ -88,14 +89,15 @@ RenderPushString(render_state *RenderState, string_u8 Text, vec2 Position, vec4 
     {
         uint8 *pCharacter = Text.Data + StringIndex;
         uint8  Character  = *pCharacter;
-        
-        glyph_data *Glyph = GetUTF8Glyph(Metrics, pCharacter);
-        if (Character == '\n' || Character == '\r')
+        if(Character == '\n' || Character == '\r')
         {
             DrawPosition.X = 0;
-            DrawPosition.Y += Metrics->MaxAscender;
-        }
+            DrawPosition.Y += Metrics->TypicalAscender;
 
+            continue;
+        }
+        
+        glyph_data *Glyph = GetUTF8Glyph(Metrics, pCharacter);
         if(Character == '\t' || Character == ' ')
         {
             DrawPosition.X += Glyph->Advance;
@@ -109,4 +111,32 @@ RenderPushString(render_state *RenderState, string_u8 Text, vec2 Position, vec4 
             DrawPosition.X += Glyph->Advance;
         }
     }
+}
+
+internal void 
+RenderPushRectangle(render_state *RenderState, vec2 Position, vec2 Size, real32 Roundness, real32 Thickness, vec4 Color)
+{    
+    render_vertex Vertices[6] = {};
+    real32        HalfThickness = Thickness;
+
+    Vertices[0].Position = {Position.X         , Position.Y};
+    Vertices[1].Position = {Position.X + Size.X, Position.Y};
+    Vertices[2].Position = {Position.X + Size.X, Position.Y + Size.Y};
+    Vertices[5].Position = {Position.X         , Position.Y + Size.Y};
+
+    Vertices[4] = Vertices[2];
+    Vertices[3] = Vertices[0];
+
+  vec2 Center = {Position.X + (Size.X * 0.5f), Position.Y + (Size.Y * 0.5f)};
+  for(int32 Index = 0;
+        Index < 6;
+        ++Index)
+    {
+        Vertices[Index].TexCoords     = Center;
+        Vertices[Index].Color         = Color;
+        Vertices[Index].HalfThickness = HalfThickness;
+        Vertices[Index].Roundness     = Roundness;
+    }
+
+    PushVertices(RenderState, Vertices);
 }

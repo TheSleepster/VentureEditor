@@ -249,13 +249,13 @@ internal venture_dynamic_render_font
 LoadFontData(memory_arena *Arena, string_u8 Filepath)
 {
     venture_dynamic_render_font Result;
-    uint32 FileSize;
+    string_u8 Data = PlatformReadEntireFile(Arena, Filepath);
 
     Result.Filepath       = Filepath;
     Result.FontArena      = Arena;
     Result.PixelSizes     = (venture_dynamic_font_varient *)DArrayCreate(venture_dynamic_font_varient *, 10);
-    Result.FontData       = PlatformReadEntireFile(Arena, Filepath, &FileSize);
-    Result.FontDataLength = FileSize;
+    Result.FontData       = Data.Data;
+    Result.FontDataLength = Data.Length;
 
     return(Result);
 }

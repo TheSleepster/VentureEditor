@@ -9,15 +9,15 @@
 #define VENTURE_OPENGL_H
 #include <venture_base_types.h>
 
-constexpr uint64 MAX_VERTICES = 10000;
+constexpr uint64 MAX_VERTICES = 60000;
 
 struct render_vertex
 {
-    vec2    Position;
-    vec2    TexCoords;
-    vec4    Color;
-    float32 HalfThickness;
-    //int32 TexIndex;
+    vec2   Position;
+    vec2   TexCoords;
+    vec4   Color;
+    real32 HalfThickness;
+    real32 Roundness;
 };
 
 struct shader_program

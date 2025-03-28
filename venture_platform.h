@@ -33,15 +33,17 @@ global bool8 AppIsRunning;
 global ivec2 ClientSize;
 
 // PLATFORM STUFF
-#define PLATFORM_VIRTUAL_ALLOC(name)       void*  name(uint64 Size)
-#define PLATFORM_HEAP_ALLOC(name)          void*  name(uint64 Size)
-#define PLATFORM_HEAP_REALLOC(name)        void*  name(void *OldData, uint64 NewSize)
-#define PLATFORM_HEAP_FREE(name)           void*  name(void *Data)
+#define PLATFORM_VIRTUAL_ALLOC(name)       void*     name(uint64 Size)
+#define PLATFORM_HEAP_ALLOC(name)          void*     name(uint64 Size)
+#define PLATFORM_HEAP_REALLOC(name)        void*     name(void *OldData, uint64 NewSize)
+#define PLATFORM_HEAP_FREE(name)           void*     name(void *Data)
 
-#define PLATFORM_READ_ENTIRE_FILE(name)    uint8* name(memory_arena *Arena, string_u8 Filepath, uint32 *FileSizeOut)
-#define PLATFORM_POLL_EVENTS(name)         void   name(platform_data_handles *PlatformHandleData)
-#define PLATFORM_SWAP_RENDER_BUFFERS(name) void   name(platform_data_handles *PlatformHandleData)
-#define PLATFORM_GET_CLIENT_SIZE(name)     ivec2  name(platform_data_handles *PlatformHandleData)
+#define PLATFORM_READ_ENTIRE_FILE(name)    string_u8 name(memory_arena *Arena, string_u8 Filepath)
+#define PLATFORM_WRITE_ENTIRE_FILE(name)   bool8     name();
+
+#define PLATFORM_POLL_EVENTS(name)         void      name(platform_data_handles *PlatformHandleData)
+#define PLATFORM_SWAP_RENDER_BUFFERS(name) void      name(platform_data_handles *PlatformHandleData)
+#define PLATFORM_GET_CLIENT_SIZE(name)     ivec2     name(platform_data_handles *PlatformHandleData)
 
 
 internal inline PLATFORM_VIRTUAL_ALLOC(PlatformVirtualAlloc);

@@ -24,14 +24,16 @@ struct memory_arena
     uint8 *Base;
 };
 
-#define KB(x) (x * 1000)
+#define KB(x) (x     * 1000)
 #define MB(x) (KB(x) * 1000)
 #define GB(x) (MB(x) * 1000)
 
-#define ArenaPushSize(Arena, size, ...)                 ArenaAllocate(Arena, size, ##__VA_ARGS__)
-#define ArenaPushStruct(Arena, type, ...)       (type *)ArenaAllocate(Arena, sizeof(type), ##__VA_ARGS__)
-#define ArenaPushArray(Arena, type, Count, ...) (type *)ArenaAllocate(Arena, sizeof(type) * (Count), ##__VA_ARGS__)
+#define ArenaAllocateDEBUG(arena, size, ...) ArenaAllocate(arena, size, __FILE__, __LINE__, ##__VA_ARGS__)
 
-internal void* ArenaAllocate(memory_arena *Arena, uint64 Size, uint32 Alignment = 4);
+#define ArenaPushSize(Arena, size, ...)                 ArenaAllocateDEBUG(Arena, size, ##__VA_ARGS__)
+#define ArenaPushStruct(Arena, type, ...)       (type *)ArenaAllocateDEBUG(Arena, sizeof(type), ##__VA_ARGS__)
+#define ArenaPushArray(Arena, type, Count, ...) (type *)ArenaAllocateDEBUG(Arena, sizeof(type) * (Count), ##__VA_ARGS__)
+
+internal void* ArenaAllocate(memory_arena *Arena, uint64 Size, const char *File = null, int32 Line = -1, uint32 Alignment = 4);
 
 #endif

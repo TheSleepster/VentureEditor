@@ -45,4 +45,12 @@ typedef double   float64;
 
 #define null nullptr
 
+#if _MSC_VER
+// TODO(Sleepster): Double check this stuff
+#define WriteBarrier     _WriteBarrier(); _mm_sfence()
+#define ReadBarrier      _ReadBarrier();  _mm_sfence()
+#define ReadWriteBarrier _ReadWriteBarrier(); _mm_lfence()
+#endif
+
+
 #endif

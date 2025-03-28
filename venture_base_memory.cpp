@@ -77,7 +77,7 @@ ArenaGetAlignmentOffset(memory_arena *Arena, uint32 Alignment = 4)
 }
 
 internal void*
-ArenaAllocate(memory_arena *Arena, uint64 Size, uint32 Alignment)
+ArenaAllocate(memory_arena *Arena, uint64 Size, const char *Filename, int32 Line, uint32 Alignment)
 {
     void *Result;
     
@@ -89,8 +89,11 @@ ArenaAllocate(memory_arena *Arena, uint64 Size, uint32 Alignment)
     Result = (void *)(Arena->Base + Arena->Allocated + AlignmentOffset);
 
 #ifdef INTERNAL_DEBUG
-    Log(LOG_TRACE, "Size of: '%d', has been arena allocated... Arena has: '%d' bytes remaining...",
-        Size, Arena->Capacity - Arena->Allocated);
+    if(Filename && Line > 0)
+    {
+        Log(LOG_TRACE, "'%s', Line: '%d'...\n \t\t  Size of: '%d', has been arena allocated... Arena has: '%d' bytes remaining...",
+            Filename, Line, Size, Arena->Capacity - Arena->Allocated);
+    }
 #endif
 
     Arena->Allocated += Size;

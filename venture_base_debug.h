@@ -29,7 +29,10 @@
     }                                                                                   \
 }
 #else
+
 #define Assert(Condition, Message, ...)
+#define DebugHalt()
+
 #endif
 
 #define InvalidCodePath DebugHalt()
@@ -86,4 +89,5 @@ _Log(debug_log_level LogLevel, const char *Message, char *File, int32 Line, ...)
 
     printf("%s", OutBuffer);
 }
+
 #endif

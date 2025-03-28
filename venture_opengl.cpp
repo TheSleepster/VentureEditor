@@ -72,16 +72,26 @@ layout(location = 0) in vec2  vPosition;
 layout(location = 1) in vec2  vTexCoords;
 layout(location = 2) in vec4  vColor;
 layout(location = 3) in float vHalfThickness;
+layout(location = 4) in float vRoundness;
 
 smooth out vec4  vOutColor;
 smooth out vec2  vOutTexCoords;
+smooth out vec2  vOutVertexPosition;
+smooth out vec2  vOutAdjustedHalfDim;
 smooth out float vOutHalfThickness;
+smooth out float vOutRoundness;
 
 void main()
 {
-    vOutColor         = vColor;
-    vOutTexCoords     = vTexCoords;
-    vOutHalfThickness = vHalfThickness;
+    vOutColor          = vColor;
+    vOutTexCoords      = vTexCoords;
+    vOutHalfThickness  = vHalfThickness;
+    vOutRoundness      = vRoundness;
+    vOutVertexPosition = vPosition;
+
+    vec2 Center = vTexCoords;
+    vec2 HalfDim = abs(vPosition - Center);
+    vOutAdjustedHalfDim = (HalfDim - vRoundness) + vec2(0.5, 0.5);
 
     gl_Position       = vec4(ViewMatrixTransform * (vPosition - ScreenSpaceTranslation), 0.0, 1.0); 
 }
@@ -94,31 +104,34 @@ uniform sampler2D FontAtlas;
 
 smooth in vec4  vOutColor;
 smooth in vec2  vOutTexCoords;
+smooth in vec2  vOutVertexPosition;
+smooth in vec2  vOutAdjustedHalfDim;
 smooth in float vOutHalfThickness;
+smooth in float vOutRoundness;
 
 out vec4 vFragColor;
+
+float
+RectangleShading(vec2 Position, vec2 Size)
+{
+    vec2 Dif = abs(Position) - Size;
+    return(length(max(Dif, 0.0)) + min(max(Dif.x, Dif.y), 0.0));
+}
+
 void main()
 {
-    vec4 BlendColor;
+    vec2  NormalizedTexCoords = vOutTexCoords / vec2(2048, 2048); 
+    float SampleValue         = texture(FontAtlas, NormalizedTexCoords).r;
+    float Thickness           = (step(0.0, vOutHalfThickness));
+    SampleValue              *= Thickness;
 
-    vec2 NormalizedTexCoords = vOutTexCoords / vec2(2048, 2048); 
-    vec4 TextureColor        = texture(FontAtlas, NormalizedTexCoords);
-    float AdjustedAlpha      = clamp(TextureColor.a + vOutHalfThickness * 0.1, 0.0, 1.0);
+    vec2 Center           = vOutTexCoords;
+    float Distance        = RectangleShading(vOutVertexPosition - Center, vOutAdjustedHalfDim) - vOutRoundness;
+    float OutlineDistance = abs(Distance) - vOutHalfThickness;
+    float ShapeValue      = 1.0 - smoothstep(-0.5, 0.5, OutlineDistance);
+    ShapeValue           *= Thickness;
 
-    if(TextureColor.rgb == 0.0)
-    {
-        if(TextureColor.a == 0.0)
-        {
-            discard;
-        }
-        BlendColor = vec4(1.0);
-    }
-    else
-    {
-        BlendColor = TextureColor;
-    }
-
-    vFragColor = vec4(vOutColor.xyz * BlendColor.xyz, vOutColor.a * AdjustedAlpha);
+    vFragColor = vec4(vOutColor.xyz, vOutColor.a * (SampleValue + ShapeValue));
 }
 )FOO";
 
@@ -157,12 +170,12 @@ VentureLoadShader()
 
         if(VertexErrors[0] != '\0')
         {
-            Log(LOG_ERROR, "Vertex Shader errors:\n %s", VertexErrors);
+            Log(LOG_WARNING, "Vertex Shader errors:\n %s", VertexErrors);
         }
 
         if(FragmentErrors[0] != '\0')
         {
-            Log(LOG_ERROR, "Fragment Shader errors:\n %s", FragmentErrors);
+            Log(LOG_WARNING, "Fragment Shader errors:\n %s", FragmentErrors);
         }
         DebugHalt();
     }
@@ -230,15 +243,17 @@ VentureInitOpenGLRenderer(render_state *RenderState)
         glBindBuffer(GL_ARRAY_BUFFER, RenderState->VBOID);
         glBufferData(GL_ARRAY_BUFFER, sizeof(render_vertex) * MAX_VERTICES, 0, GL_STREAM_DRAW);
 
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(render_vertex), (void *)GetMemberOffset(render_vertex, Position));
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(render_vertex), (void *)GetMemberOffset(render_vertex, TexCoords));
-        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(render_vertex), (void *)GetMemberOffset(render_vertex, Color));
-        glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(render_vertex), (void *)GetMemberOffset(render_vertex, HalfThickness));
+         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(render_vertex), (void *)GetMemberOffset(render_vertex, Position));
+         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(render_vertex), (void *)GetMemberOffset(render_vertex, TexCoords));
+         glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(render_vertex), (void *)GetMemberOffset(render_vertex, Color));
+         glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(render_vertex), (void *)GetMemberOffset(render_vertex, HalfThickness));
+         glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(render_vertex), (void *)GetMemberOffset(render_vertex, Roundness));
 
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
         glEnableVertexAttribArray(2);
         glEnableVertexAttribArray(3);
+        glEnableVertexAttribArray(4);
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }

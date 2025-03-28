@@ -44,7 +44,7 @@ enum darray_header_data
 #define DArraySetArrayElementSize(array, new_size)  DArraySetHeaderInfo(array, DARRAY_ELEMENT_STRIDe, new_size)
 
 // API MACROS
-#define DArrayCreate(type, ...)                     DArrayCreate_(sizeof(type), ##__VA_ARGS__)
+#define DArrayCreate(type, ...)                     DArrayCreate_(sizeof(type), __FILE__, __LINE__, ##__VA_ARGS__)
 #define DArrayInsertAt(array, valueptr, index)      DArrayInsert_(array, valueptr, sizeof(*valueptr), index)
 
 // TODO(Sleepster): This is only MSVC for now, we will need to port
@@ -74,7 +74,7 @@ DArraySetHeaderInfo(void *Array, uint64 FieldIndex, uint64 Value)
 }
 
 internal void*
-DArrayCreate_(uint64 TypeSize, uint64 InitialCapacity = DefaultDArrayCapacity)
+DArrayCreate_(uint64 TypeSize, const char *File = null, int32 Line = -1, uint64 InitialCapacity = DefaultDArrayCapacity)
 {
     uint64 HeaderSize = DARRAY_HEADER_SIZE * sizeof(uint64);
     uint64 ArraySize  = TypeSize * InitialCapacity;
@@ -87,7 +87,11 @@ DArrayCreate_(uint64 TypeSize, uint64 InitialCapacity = DefaultDArrayCapacity)
     Array[DARRAY_ELEMENT_USED]   = 0;
 
 #ifdef INTERNAL_DEBUG
-    Log(LOG_TRACE, "Dynamic Array with of size: '%d' has been created...", ArraySize + HeaderSize);
+    if(File && Line > 0)
+    {
+        Log(LOG_TRACE, "'%s', Line: '%d'...\n\t\t  Dynamic Array with of size: '%d' has been created...",
+            File, Line, ArraySize + HeaderSize);
+    }
 #endif
 
     return((void *)(Array + DARRAY_HEADER_SIZE));
